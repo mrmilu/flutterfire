@@ -123,48 +123,66 @@ static NSMutableDictionary *getDictionaryFromFlutterError(FlutterError *error) {
 
 - (BOOL)checkForDynamicLink:(NSURL *)url {
   FIRDynamicLink *dynamicLink = [[FIRDynamicLinks dynamicLinks] dynamicLinkFromCustomSchemeURL:url];
-  if (dynamicLink) {
-    if (dynamicLink.url) _initialLink = dynamicLink;
+
+  if (!dynamicLink) {
+    dynamicLink = [[FIRDynamicLinks dynamicLinks] dynamicLinkFromUniversalLinkURL:url];
+  }
+
+  if (!dynamicLink) {
+    return NO;
+  }
+
+  if (dynamicLink.url) {
+    if (_initiated) {
+      [self.channel invokeMethod:@"onLinkSuccess"
+                       arguments:getDictionaryFromDynamicLink(dynamicLink)];
+    } else {
+      _initialLink = dynamicLink;
+    }
     return YES;
   }
   return NO;
 }
 
-- (BOOL)onLink:(NSUserActivity *)userActivity {
-  BOOL handled = [[FIRDynamicLinks dynamicLinks]
-      handleUniversalLink:userActivity.webpageURL
-               completion:^(FIRDynamicLink *_Nullable dynamicLink, NSError *_Nullable error) {
-                 if (error) {
-                   FlutterError *flutterError = getFlutterError(error);
-                   [self.channel invokeMethod:@"onLinkError"
-                                    arguments:getDictionaryFromFlutterError(flutterError)];
-                 } else {
-                   NSMutableDictionary *dictionary = getDictionaryFromDynamicLink(dynamicLink);
-                   [self.channel invokeMethod:@"onLinkSuccess" arguments:dictionary];
-                 }
-               }];
-  return handled;
-}
-
-- (BOOL)onInitialLink:(NSUserActivity *)userActivity {
-  BOOL handled = [[FIRDynamicLinks dynamicLinks]
-      handleUniversalLink:userActivity.webpageURL
-               completion:^(FIRDynamicLink *_Nullable dynamicLink, NSError *_Nullable error) {
-                 if (error) {
-                   self.flutterError = getFlutterError(error);
-                 }
-                 self.initialLink = dynamicLink;
-               }];
-  return handled;
-}
-
 - (BOOL)application:(UIApplication *)application
     continueUserActivity:(NSUserActivity *)userActivity
-      restorationHandler:(void (^)(NSArray *))restorationHandler {
-  if (_initiated) {
-    return [self onLink:userActivity];
-  }
-  return [self onInitialLink:userActivity];
+      restorationHandler:
+#if defined(__IPHONE_12_0) && (__IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_12_0)
+          (nonnull void (^)(NSArray<id<UIUserActivityRestoring>> *_Nullable))restorationHandler {
+#else
+          (nonnull void (^)(NSArray *_Nullable))restorationHandler {
+#endif  // __IPHONE_12_0
+  __block BOOL retried = NO;
+
+  id completion = ^(FIRDynamicLink *_Nullable dynamicLink, NSError *_Nullable error) {
+    if (!error && dynamicLink && dynamicLink.url) {
+      if (_initiated) {
+        [self.channel invokeMethod:@"onLinkSuccess"
+                         arguments:getDictionaryFromDynamicLink(dynamicLink)];
+      } else {
+        _initialLink = dynamicLink;
+      }
+    }
+
+    // Per Apple Tech Support, a network failure could occur when returning from background on
+    // iOS 12. https://github.com/AFNetworking/AFNetworking/issues/4279#issuecomment-447108981 So
+    // we'll retry the request once
+    if (error && !retried && [NSPOSIXErrorDomain isEqualToString:error.domain] &&
+        error.code == 53) {
+      retried = YES;
+      [[FIRDynamicLinks dynamicLinks] handleUniversalLink:userActivity.webpageURL
+                                               completion:completion];
+    } else if (error) {
+      FlutterError *flutterError = getFlutterError(error);
+      [self.channel invokeMethod:@"onLinkError"
+                       arguments:getDictionaryFromFlutterError(flutterError)];
+    }
+  };
+
+  [[FIRDynamicLinks dynamicLinks] handleUniversalLink:userActivity.webpageURL
+                                           completion:completion];
+
+  return NO;
 }
 
 - (FIRDynamicLinkShortenerCompletion)createShortLinkCompletion:(FlutterResult)result {

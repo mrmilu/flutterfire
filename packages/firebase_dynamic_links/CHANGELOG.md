@@ -1,3 +1,7 @@
+## 0.5.0+4
+
+* Fixed iOS problems on iOS 12.
+
 ## 0.5.0+3
 
 * Don't crash if registrar.activity() is not there.
