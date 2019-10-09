@@ -13,7 +13,8 @@ static FlutterError *getFlutterError(NSError *error) {
                              details:error.localizedDescription];
 }
 
-static NSMutableDictionary *getDictionaryFromDynamicLink(FIRDynamicLink *dynamicLink) {
+static NSMutableDictionary *getDictionaryFromDynamicLink(FIRDynamicLink *dynamicLink,
+                                                         NSURL *sourceLink) {
   if (dynamicLink != nil) {
     NSMutableDictionary *dictionary = [[NSMutableDictionary alloc] init];
     dictionary[@"link"] = dynamicLink.url.absoluteString;
@@ -23,6 +24,7 @@ static NSMutableDictionary *getDictionaryFromDynamicLink(FIRDynamicLink *dynamic
       iosData[@"minimumVersion"] = dynamicLink.minimumAppVersion;
     }
     dictionary[@"ios"] = iosData;
+    dictionary[@"sourceLink"] = sourceLink.absoluteString;
     return dictionary;
   } else {
     return nil;
@@ -44,6 +46,7 @@ static NSMutableDictionary *getDictionaryFromFlutterError(FlutterError *error) {
 @interface FLTFirebaseDynamicLinksPlugin ()
 @property(nonatomic, retain) FlutterMethodChannel *channel;
 @property(nonatomic, retain) FIRDynamicLink *initialLink;
+@property(nonatomic, retain) NSURL *sourceLink;
 @property(nonatomic, retain) FlutterError *flutterError;
 @property(nonatomic) BOOL initiated;
 @end
@@ -105,7 +108,7 @@ static NSMutableDictionary *getDictionaryFromFlutterError(FlutterError *error) {
 }
 
 - (NSMutableDictionary *)getInitialLink {
-  return getDictionaryFromDynamicLink(_initialLink);
+  return getDictionaryFromDynamicLink(_initialLink, _sourceLink);
 }
 
 - (BOOL)application:(UIApplication *)application
@@ -135,9 +138,10 @@ static NSMutableDictionary *getDictionaryFromFlutterError(FlutterError *error) {
   if (dynamicLink.url) {
     if (_initiated) {
       [self.channel invokeMethod:@"onLinkSuccess"
-                       arguments:getDictionaryFromDynamicLink(dynamicLink)];
+                       arguments:getDictionaryFromDynamicLink(dynamicLink, url)];
     } else {
       _initialLink = dynamicLink;
+      _sourceLink = url;
     }
     return YES;
   }
@@ -157,10 +161,12 @@ static NSMutableDictionary *getDictionaryFromFlutterError(FlutterError *error) {
   id completion = ^(FIRDynamicLink *_Nullable dynamicLink, NSError *_Nullable error) {
     if (!error && dynamicLink && dynamicLink.url) {
       if (_initiated) {
-        [self.channel invokeMethod:@"onLinkSuccess"
-                         arguments:getDictionaryFromDynamicLink(dynamicLink)];
+        [self.channel
+            invokeMethod:@"onLinkSuccess"
+               arguments:getDictionaryFromDynamicLink(dynamicLink, userActivity.webpageURL)];
       } else {
         _initialLink = dynamicLink;
+        _sourceLink = userActivity.webpageURL;
       }
     }
 

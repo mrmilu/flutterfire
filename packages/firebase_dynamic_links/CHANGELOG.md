@@ -1,3 +1,7 @@
+## 0.5.0+5
+
+* Added `sourceLink` to `PendingDynamicLinkData` with the link the user clicked. 
+
 ## 0.5.0+4
 
 * Fixed iOS problems on iOS 12.

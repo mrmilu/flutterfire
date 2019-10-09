@@ -37,7 +37,7 @@ public class FirebaseDynamicLinksPlugin implements MethodCallHandler, NewIntentL
   }
 
   @Override
-  public boolean onNewIntent(Intent intent) {
+  public boolean onNewIntent(final Intent intent) {
     FirebaseDynamicLinks.getInstance()
         .getDynamicLink(intent)
         .addOnSuccessListener(
@@ -46,7 +46,8 @@ public class FirebaseDynamicLinksPlugin implements MethodCallHandler, NewIntentL
               public void onSuccess(PendingDynamicLinkData pendingDynamicLinkData) {
                 if (pendingDynamicLinkData != null) {
                   Map<String, Object> dynamicLink =
-                      getMapFromPendingDynamicLinkData(pendingDynamicLinkData);
+                      getMapFromPendingDynamicLinkData(
+                          pendingDynamicLinkData, intent.getDataString());
                   channel.invokeMethod("onLinkSuccess", dynamicLink);
                 }
               }
@@ -102,7 +103,7 @@ public class FirebaseDynamicLinksPlugin implements MethodCallHandler, NewIntentL
   }
 
   private Map<String, Object> getMapFromPendingDynamicLinkData(
-      PendingDynamicLinkData pendingDynamicLinkData) {
+      PendingDynamicLinkData pendingDynamicLinkData, String sourceLink) {
     Map<String, Object> dynamicLink = new HashMap<>();
     dynamicLink.put("link", pendingDynamicLinkData.getLink().toString());
 
@@ -111,6 +112,7 @@ public class FirebaseDynamicLinksPlugin implements MethodCallHandler, NewIntentL
     androidData.put("minimumVersion", pendingDynamicLinkData.getMinimumAppVersion());
 
     dynamicLink.put("android", androidData);
+    dynamicLink.put("sourceLink", sourceLink);
     return dynamicLink;
   }
 
@@ -130,7 +132,8 @@ public class FirebaseDynamicLinksPlugin implements MethodCallHandler, NewIntentL
               public void onSuccess(PendingDynamicLinkData pendingDynamicLinkData) {
                 if (pendingDynamicLinkData != null) {
                   Map<String, Object> dynamicLink =
-                      getMapFromPendingDynamicLinkData(pendingDynamicLinkData);
+                      getMapFromPendingDynamicLinkData(
+                          pendingDynamicLinkData, registrar.activity().getIntent().getDataString());
                   result.success(dynamicLink);
                   return;
                 }

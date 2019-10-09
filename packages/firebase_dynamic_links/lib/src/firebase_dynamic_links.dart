@@ -56,11 +56,8 @@ class FirebaseDynamicLinks {
       iosData = PendingDynamicLinkDataIOS._(data['minimumVersion']);
     }
 
-    return PendingDynamicLinkData._(
-      Uri.parse(linkData['link']),
-      androidData,
-      iosData,
-    );
+    return PendingDynamicLinkData._(Uri.parse(linkData['link']), androidData,
+        iosData, Uri.parse(linkData['sourceLink']));
   }
 
   /// Configures onLink listeners: it has two methods for success and failure.
@@ -93,7 +90,7 @@ class FirebaseDynamicLinks {
 
 /// Provides data from received dynamic link.
 class PendingDynamicLinkData {
-  PendingDynamicLinkData._(this.link, this.android, this.ios);
+  PendingDynamicLinkData._(this.link, this.android, this.ios, this.sourceLink);
 
   /// Provides Android specific data from received dynamic link.
   ///
@@ -109,6 +106,9 @@ class PendingDynamicLinkData {
 
   /// Deep link parameter of the dynamic link.
   final Uri link;
+
+  /// Source link which the user clicked.
+  final Uri sourceLink;
 }
 
 /// Provides android specific data from received dynamic link.

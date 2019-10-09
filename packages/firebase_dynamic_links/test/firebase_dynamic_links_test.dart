@@ -38,6 +38,7 @@ void main() {
               'ios': <dynamic, dynamic>{
                 'minimumVersion': 'Version 12',
               },
+              'sourceLink': 'https://google.com'
             };
           default:
             return null;
@@ -51,6 +52,7 @@ void main() {
           await FirebaseDynamicLinks.instance.getInitialLink();
 
       expect(data.link, Uri.parse('https://google.com'));
+      expect(data.sourceLink, Uri.parse('https://google.com'));
 
       expect(data.android.clickTimestamp, 1234567);
       expect(data.android.minimumVersion, 12);
