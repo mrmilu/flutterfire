@@ -106,12 +106,11 @@ static NSObject<FlutterPluginRegistrar> *_registrar;
     if (!@available(iOS 10.0, *)) {
       result([NSNumber numberWithBool:YES]);
     }
+  } else if ([@"getLaunchMessage" isEqualToString:method]) {
+    result(_launchNotification);
   } else if ([@"configure" isEqualToString:method]) {
     [FIRMessaging messaging].shouldEstablishDirectChannel = true;
     [[UIApplication sharedApplication] registerForRemoteNotifications];
-    if (_launchNotification != nil) {
-      [_channel invokeMethod:@"onLaunch" arguments:_launchNotification];
-    }
     result(nil);
   } else if ([@"subscribeToTopic" isEqualToString:method]) {
     NSString *topic = call.arguments;

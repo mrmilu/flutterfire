@@ -1,3 +1,7 @@
+## 7.0.0
+*  **Breaking Change** Separated onLaunch to an specific method to be able to retrieve launch
+   message in a synchronous way.
+
 ## 6.0.1
 
 * `FirebaseMessaging.configure` will throw an `ArgumentError` when `onBackgroundMessage` parameter
