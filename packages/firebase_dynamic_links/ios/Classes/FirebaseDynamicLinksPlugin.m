@@ -164,8 +164,9 @@ static NSMutableDictionary *getDictionaryFromFlutterError(FlutterError *error) {
           (nonnull void (^)(NSArray *_Nullable))restorationHandler {
 #endif  // __IPHONE_12_0
   __block BOOL retried = NO;
+  __block id completion;
 
-  id completion = ^(FIRDynamicLink *_Nullable dynamicLink, NSError *_Nullable error) {
+  completion = ^(FIRDynamicLink *_Nullable dynamicLink, NSError *_Nullable error) {
     if (!error && dynamicLink && dynamicLink.url) {
       if (_initiated) {
         [self.channel invokeMethod:@"onLinkSuccess"
