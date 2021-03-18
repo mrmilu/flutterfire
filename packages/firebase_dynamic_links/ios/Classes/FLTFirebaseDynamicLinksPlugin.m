@@ -179,7 +179,7 @@ static NSMutableDictionary *getDictionaryFromFlutterError(FlutterError *error) {
         if (!error && dynamicLink && dynamicLink.url) {
           [self onDeepLinkResult:dynamicLink error:nil];
         }
-      }
+    
       // Per Apple Tech Support, a network failure could occur when returning from background on
       // iOS 12. https://github.com/AFNetworking/AFNetworking/issues/4279#issuecomment-447108981 So
       // we'll retry the request once
